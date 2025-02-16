@@ -27,7 +27,7 @@ Endpoints - <br>
 Queries <br>
 getAllEmployees: Retrieve all employees.
 searchEmployeeById: Retrieve an employee by their ID.
-searchEmployeeByDesignationOrDepartment: Retrieve employees by designation or department.
+searchEmployeeByDesignationOrDepartment: Retrieve employees by designation or department. <br>
 Mutations <br>
 signup: Create a new user account
 login: User authentication to get the JWT token.
