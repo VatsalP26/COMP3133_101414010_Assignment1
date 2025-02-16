@@ -6,7 +6,7 @@ Overview
 This Employee Management System allows administrators to manage employee data. The system includes functionalities for adding, updating, viewing, and deleting employee records, along with uploading employee profile photos. The backend is built using Node.js, Express, and MongoDB. The project uses GraphQL to interact with the data, ensuring flexibility in querying and mutations. The application includes JWT-based authentication for securing the endpoints.
 I have used Apollo Server for implementing GraphQL API.
 
-Features
+Features <br>
 User Authentication: Secure login system using JWT.
 Employee Management: Add, update, delete, and view employee records.
 File Upload: Employee profile photos are uploaded and stored in the server, with proper handling of file types.
@@ -22,15 +22,15 @@ Bcryptjs: Library for password hashing.
 JWT (JSON Web Token): Token-based authentication for securing the API.
 Mongoose: ODM (Object Data Modeling) library for MongoDB and Node.js.
 
-Tested GraphQL API using Postman 
-Endpoints -
-Queries
+Tested GraphQL API using Postman <br>
+Endpoints - <br>
+Queries <br>
 getAllEmployees: Retrieve all employees.
 searchEmployeeById: Retrieve an employee by their ID.
 searchEmployeeByDesignationOrDepartment: Retrieve employees by designation or department.
-Mutations
+Mutations <br>
+signup: Create a new user account
 login: User authentication to get the JWT token.
-signup: Create a new user account.
 addEmployee: Add a new employee, including the profile photo.
 updateEmployee: Update an existing employee's details, including the profile photo.
 deleteEmployee: Delete an employee by ID.
