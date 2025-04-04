@@ -57,7 +57,8 @@ scalar Upload
             email: String,
             designation: String,
             salary: Float,
-            department: String
+            department: String,
+            file: Upload
         ): Employee
         deleteEmployee(id: ID!): String
     }

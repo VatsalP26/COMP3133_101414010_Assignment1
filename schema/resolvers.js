@@ -2,14 +2,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Employee = require('../models/Employee');
-const upload = require('../middleware/uploadMiddleware');
+const { finished } = require('stream/promises');
+const path = require('path');
+const fs = require('fs');
+const { GraphQLUpload } = require('graphql-upload');
 
 const resolvers = {
-    Query: { // user will login using email & password
+    Upload: GraphQLUpload, 
+
+    Query: {
         login: async (_, { email, password }) => {
             try {
                 const user = await User.findOne({ email });
-                if (!user) throw new Error("Invalid credentials"); 
+                if (!user) throw new Error("Invalid credentials");
 
                 const isMatch = await bcrypt.compare(password, user.password);
                 if (!isMatch) throw new Error("Invalid credentials");
@@ -25,7 +30,7 @@ const resolvers = {
                 throw new Error(error.message);
             }
         },
-    // applying the functionality to get all employees or by their id     
+
         getAllEmployees: async () => {
             try {
                 return await Employee.find();
@@ -43,7 +48,7 @@ const resolvers = {
                 throw new Error("Invalid Employee ID");
             }
         },
-    // applying the functionality to search employees by sedignation or department
+
         searchEmployeeByDesignationOrDepartment: async (_, { designation, department }) => {
             try {
                 let filter = {};
@@ -57,7 +62,7 @@ const resolvers = {
             }
         }
     },
-    // logining in using mutation and the requirement is username, email, password
+
     Mutation: {
         signup: async (_, { username, email, password }) => {
             try {
@@ -73,13 +78,27 @@ const resolvers = {
                 throw new Error(error.message);
             }
         },
-    // mutation to add, update and delete employee
-        addEmployee: async (_, employeeData, { req }) => {
-            try {
-                let employeePhotoPath = "uploads/default.jpg"; 
 
-                if (req.file) {
-                    employeePhotoPath = `uploads/${req.file.filename}`;
+        addEmployee: async (_, { file, ...employeeData }) => {
+            try {
+                let photoPath = null;
+
+                if (file) {
+                    const { createReadStream, filename } = await file; 
+                    const stream = createReadStream();
+
+                    const uploadDir = path.join(__dirname, '..', 'uploads');
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir);
+                    }
+
+                    const uniqueFileName = `${Date.now()}-${filename}`;
+                    const filePath = path.join(uploadDir, uniqueFileName);
+                    const out = fs.createWriteStream(filePath);
+                    stream.pipe(out);
+                    await finished(out);
+
+                    photoPath = `uploads/${uniqueFileName}`;
                 }
 
                 const existingEmployee = await Employee.findOne({ email: employeeData.email });
@@ -87,7 +106,7 @@ const resolvers = {
 
                 const newEmployee = new Employee({
                     ...employeeData,
-                    employee_photo: employeePhotoPath
+                    employee_photo: photoPath,
                 });
 
                 await newEmployee.save();
@@ -97,26 +116,64 @@ const resolvers = {
             }
         },
 
-        updateEmployee: async (_, { id, ...updateData }) => {
+        updateEmployee: async (_, { id, file, ...updateData }) => {
             try {
+                const employee = await Employee.findById(id);
+                if (!employee) throw new Error("Employee not found");
+        
+                if (file) {
+                    const upload = await file;
+                    const { createReadStream, filename } = upload;
+                    const stream = createReadStream();
+        
+                    const uploadDir = path.join(__dirname, '..', 'uploads');
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir);
+                    }
+        
+                    if (employee.employee_photo) {
+                        const oldPhotoPath = path.join(__dirname, '..', employee.employee_photo);
+                        if (fs.existsSync(oldPhotoPath)) {
+                            fs.unlinkSync(oldPhotoPath);
+                        }
+                    }
+        
+                    const uniqueFileName = `${Date.now()}-${filename}`;
+                    const filePath = path.join(uploadDir, uniqueFileName);
+                    const out = fs.createWriteStream(filePath);
+                    stream.pipe(out);
+                    await finished(out);
+        
+                    updateData.employee_photo = `uploads/${uniqueFileName}`;
+                }
+        
                 const updatedEmployee = await Employee.findByIdAndUpdate(id, updateData, { new: true });
-                if (!updatedEmployee) throw new Error("Employee not found");
                 return updatedEmployee;
             } catch (error) {
                 throw new Error("Error updating employee");
             }
         },
+        
 
         deleteEmployee: async (_, { id }) => {
             try {
                 const employee = await Employee.findById(id);
                 if (!employee) throw new Error("Employee not found");
+        
+                if (employee.employee_photo) {
+                    const filePath = path.join(__dirname, '..', employee.employee_photo);
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath); 
+                    }
+                }
+        
                 await Employee.findByIdAndDelete(id);
                 return "Employee deleted successfully";
             } catch (error) {
                 throw new Error("Error deleting employee");
             }
         }
+        
     }
 };
 
